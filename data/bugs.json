@@ -4,20 +4,32 @@
         "title": "Cannot save a new bug",
         "description": "problem when clicking Save",
         "severity": 3,
-        "createdAt": 1542107359454
+        "createdAt": 1542107359454,
+        "creator": {
+            "_id": "u101",
+            "fullname": "Juki Pa"
+        }
     },
     {
         "_id": "2",
         "title": "Cannot save a new bug",
         "description": "problem when clicking Save",
         "severity": 2,
-        "createdAt": 1542107328719
+        "createdAt": 1542107328719,
+        "creator": {
+            "_id": "u101",
+            "fullname": "Puki Ja"
+        }
     },
     {
         "_id": "3",
         "title": "Cannot save a new bug",
         "description": "problem when clicking Save",
         "severity": 1,
-        "createdAt": 1542107310192
+        "createdAt": 1542107310192,
+        "creator": {
+            "_id": "u101",
+            "fullname": "Ikup Aj"
+        }
     }
 ]

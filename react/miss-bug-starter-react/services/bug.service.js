@@ -1,17 +1,14 @@
+import { utilService } from "../../../services/util.service.js"
 
-import { storageService } from './async-storage.service.js'
-import { utilService } from './util.service.js'
-
-
-const STORAGE_KEY = 'bugDB'
 const BASE_URL = '/api/bug/'
-_createBugs()
 
 export const bugService = {
     query,
-    getById,
-    save,
+    get,
     remove,
+    save,
+    getEmptyBug,
+    getDefaultFilter,
 }
 
 function query(filterBy = {}) {
@@ -19,53 +16,60 @@ function query(filterBy = {}) {
         .then(res => res.data)
 }
 
-function getById(bugId) {
-    // console.log()
+
+function get(bugId) {
     return axios.get(BASE_URL + bugId)
-    .then(res => res.data)
+        .then(res => res.data)
+        .then(bug => _setNextPrevBugId(bug))
 }
 
+//OLD
+
+// function get(bugId) {
+//     return axios.get(BASE_URL + bugId)
+//         .then(res => res.data)
+// }
+
 function remove(bugId) {
-    return axios.get(BASE_URL + bugId + '/remove')
+    return axios.delete(BASE_URL + bugId)
         .then(res => res.data)
 }
 
 function save(bug) {
-    const url = BASE_URL + 'save'
-    let queryParams = `?vendor=${bug.vendor}&speed=${bug.speed}`
-    if (bug._id) queryParams += `&_id=${bug._id}`
-    return axios.get(url + queryParams).then(res => res.data)
+    if (bug._id) {
+        return axios.put(BASE_URL, bug).then(res => res.data)
+    } else {
+        return axios.post(BASE_URL, bug).then(res => res.data)
+    }
 }
 
-function _createBugs() {
-    let bugs = utilService.loadFromStorage(STORAGE_KEY)
-    if (!bugs || !bugs.length) {
-        bugs = [
-            {
-                title: "Infinite Loop Detected",
-                severity: 4,
-                description: '',
-                _id: "1NF1N1T3"
-            },
-            {
-                title: "Keyboard Not Found",
-                severity: 3,
-                description: '',
-                _id: "K3YB0RD"
-            },
-            {
-                title: "404 Coffee Not Found",
-                severity: 2,
-                description: '',
-                _id: "C0FF33"
-            },
-            {
-                title: "Unexpected Response",
-                severity: 1,
-                description: '',
-                _id: "G0053"
-            }
-        ]
-        utilService.saveToStorage(STORAGE_KEY, bugs)
+function getEmptyBug() {
+    return {
+        title: '',
+        description: '',
+        severity: 1,
+        createdAt: Date.now()
     }
+}
+
+function getDefaultFilter() {
+    return {
+        title: '',
+        severity: '',
+        description: '',
+        sortBy: 'createdAt',
+        sortDir: '1',
+        pageIdx: 0
+    }
+}
+
+function _setNextPrevBugId(bug) {
+    return query().then((bugs) => {
+        const bugsIdx = bugs.findIndex((currBug) => currBug._id === bug._id)
+        const nextBug = bugs[bugsIdx + 1] ? bugs[bugsIdx + 1] : bugs[0]
+        const prevBug = bugs[bugsIdx - 1] ? bugs[bugsIdx - 1] : bugs[bugs.length - 1]
+        bugs.nextBugId = nextBug._id
+        bugs.prevBugId = prevBug._id
+        return bugs
+    })
 }

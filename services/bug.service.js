@@ -1,7 +1,8 @@
-import { utilService } from "./util.service.js"
 import fs from 'fs'
 
-const cars = utilService.readJsonFile('data/bugs.json')
+import { utilService } from "./util.service.js"
+import { loggerService } from './logger.service.js'
+
 
 export const bugService = {
     query,
@@ -10,51 +11,77 @@ export const bugService = {
     save
 }
 
+const PAGE_SIZE = 3
+const bugs = utilService.readJsonFile('data/bugs.json')
+
 function query(filterBy = {}) {
-    return Promise.resolve(cars)
-        .then(cars => {
-            if (filterBy.txt) {
-                const regExp = new RegExp(filterBy.txt, 'i')
-                cars = cars.filter(car => regExp.test(car.vendor))
+    return Promise.resolve(bugs)
+        .then(bugs => {
+            if (filterBy.title) {
+                const regExp = new RegExp(filterBy.title, 'i')
+                bugs = bugs.filter(bug => regExp.test(bug.title))
             }
-            if (filterBy.minSpeed) {
-                cars = cars.filter(car => car.speed >= filterBy.minSpeed)
+            if (filterBy.severity) {
+                bugs = bugs.filter(bug => bug.severity >= filterBy.severity)
             }
-            return cars
+
+            // Sorting
+            if (filterBy.sortBy) {
+                const sortDir = filterBy.sortDir === '-1' ? -1 : 1
+                bugs.sort((a, b) => {
+                    if (a[filterBy.sortBy] > b[filterBy.sortBy]) return sortDir
+                    if (a[filterBy.sortBy] < b[filterBy.sortBy]) return -sortDir
+                    return 0
+                })
+            }
+
+            if (filterBy.pageIdx !== undefined) {
+                const startIdx = filterBy.pageIdx * PAGE_SIZE // 0 , 3
+                bugs = bugs.slice(startIdx, startIdx + PAGE_SIZE)
+            }
+
+            return bugs
         })
 }
 
-function getById(carId) {
-    const car = cars.find(car => car._id === carId)
-    if (!car) return Promise.reject('Cannot find car - ' + carId)
-    return Promise.resolve(car)
+function getById(bugId) {
+    const bug = bugs.find(bug => bug._id === bugId)
+    if (!bug) return Promise.reject('Cannot find bug - ' + bugId)
+    return Promise.resolve(bug)
 }
 
-function remove(carId) {
-    const carIdx = cars.findIndex(car => car._id === carId)
-    if (carIdx < 0) return Promise.reject('Cannot find car - ' + carId)
-    cars.splice(carIdx, 1)
-    return _saveCarsToFile().then(() => `car (${carId}) removed!`)
-}
+function remove(bugId, loggedinUser) {
+    const bugIdx = bugs.findIndex(bug => bug._id === bugId)
+    if (bugIdx < 0) return Promise.reject('Cannot find bug - ' + bugId)
 
-
-function save(carToSave) {
-    if (carToSave._id) {
-        const carIdx = cars.findIndex(car => car._id === carToSave._id)
-        cars[carIdx] = carToSave
-    } else {
-        carToSave._id = utilService.makeId()
-        cars.unshift(carToSave)
+    const bug = bugs[idx]
+    if (!loggedinUser.isAdmin &&
+        bug.owner._id !== loggedinUser._id) {
+        return Promise.reject('Not your bug')
     }
 
-    return _saveCarsToFile().then(() => carToSave)
+    bugs.splice(bugIdx, 1)
+    return _saveBugsToFile().then(() => `bug (${bugId}) removed!`)
 }
 
 
-function _saveCarsToFile() {
+function save(bugToSave) {
+    if (bugToSave._id) {
+        const bugIdx = bugs.findIndex(bug => bug._id === bugToSave._id)
+        bugs[bugIdx] = bugToSave
+    } else {
+        bugToSave._id = utilService.makeId()
+        bugs.unshift(bugToSave)
+    }
+
+    return _saveBugsToFile().then(() => bugToSave)
+}
+
+
+function _saveBugsToFile() {
     return new Promise((resolve, reject) => {
-        const data = JSON.stringify(cars, null, 4)
-        fs.writeFile('data/car.json', data, (err) => {
+        const data = JSON.stringify(bugs, null, 4)
+        fs.writeFile('data/bug.json', data, (err) => {
             if (err) {
                 return reject(err)
             }

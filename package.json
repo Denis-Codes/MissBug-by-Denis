@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "cookie-parser": "^1.4.6",
+    "cryptr": "^6.3.0",
     "express": "^4.19.2",
     "nodemon": "^3.1.4"
   }
